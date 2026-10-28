@@ -43,6 +43,7 @@ Condition 5 is read separately. If it reaches the threshold, that would show tha
 - [Inference](#inference)
 - [Acknowledgement](#acknowledgement)
 - [Citation](#citation)
+- [License](#license)
 
 ## Environment Setup
 
@@ -170,3 +171,7 @@ If you use this work, please cite the original D3 paper:
   year={2025}
 }
 ```
+
+## License
+
+This project is released under the MIT License, inherited from the original [D3 repository](https://github.com/Zig-HS/D3). See [LICENSE](LICENSE) for details.
