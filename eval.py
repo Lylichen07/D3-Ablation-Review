@@ -41,9 +41,12 @@ if __name__ == '__main__':
     fake_csv = args.fake_csv
 
     # real_csv = 'datasets/csv/t1.csv'
-    # fake_csv = 'datasets/csv/t2.csv' 
-    
-    print(f"Starting AP evaluation for {encoder_type} with {loss_type} loss")
+    # fake_csv = 'datasets/csv/t2.csv'
+
+    # Seed before building the model so randomly initialized encoders are reproducible
+    seed_everything(seed)
+
+    print(f"Starting AP evaluation for {encoder_type} with {loss_type} loss (seed {seed})")
     print(f"Real CSV: {real_csv}")
     print(f"Fake CSV: {fake_csv}")
     
@@ -84,6 +87,7 @@ if __name__ == '__main__':
         f"AP Evaluation Results\n"
         f"Encoder: {encoder_type}\n"
         f"Loss Type: {loss_type}\n"
+        f"Seed: {seed}\n"
         f"Real CSV: {real_csv}\n"
         f"Fake CSV: {fake_csv}\n"
         f"Total Samples: {len(y_true)}\n"

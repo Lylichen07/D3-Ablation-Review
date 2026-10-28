@@ -19,11 +19,10 @@ Transformers = [
 
 class RandomProjection(nn.Module):
     # No network: downsample each frame and project it with a fixed Gaussian matrix
-    def __init__(self, size = 32, out_dim = 768, seed = 0):
+    def __init__(self, size = 32, out_dim = 768):
         super(RandomProjection, self).__init__()
         self.size = size
-        generator = torch.Generator().manual_seed(seed)
-        W = torch.randn(3 * size * size, out_dim, generator=generator) / out_dim ** 0.5
+        W = torch.randn(3 * size * size, out_dim) / out_dim ** 0.5
         self.register_buffer('W', W)
 
     def forward(self, x):
