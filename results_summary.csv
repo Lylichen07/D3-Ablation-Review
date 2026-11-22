@@ -1,0 +1,6 @@
+condition,mAP_mean,mAP_std,n_seeds_complete,per_seed_mAP
+XCLIP-16,98.1,0.0,1,98.10
+ResNet-18,96.76,0.0,1,96.76
+ResNet-18-rand,91.12,0.78,3,91.84; 91.23; 90.30
+XCLIP-16-rand,89.43,0.11,3,89.31; 89.46; 89.51
+RandProj,93.53,0.01,3,93.54; 93.53; 93.53
