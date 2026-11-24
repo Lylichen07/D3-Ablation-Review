@@ -6,7 +6,8 @@ REAL=GenVideo/csv/real_MSRVTT.csv
 
 run() {
   log="logs/$1.txt"; shift
-  if grep -q "AP Score:" "$log" 2>/dev/null; then return; fi
+  # "Skipped (< 8 frames):" only appears in logs of finished runs that also wrote per-video scores
+  if grep -q "Skipped (< 8 frames):" "$log" 2>/dev/null; then return; fi
   echo "$(date +%H:%M) run $log"
   python eval.py --gpu-id 0 --loss l2 "$@" > "$log" 2>&1
   grep -q "AP Score:" "$log" && echo "      ok" || echo "      FAILED: $(tail -1 "$log")"

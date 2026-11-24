@@ -71,8 +71,12 @@ class D3_dataset_AP(Dataset):
 
     def __init__(self, real_csv, fake_csv, max_len = 9999999, aug_type = None, aug_quality = None):
         super(D3_dataset_AP, self).__init__()
-        df_real = pd.read_csv(real_csv).head(max_len)
-        df_fake = pd.read_csv(fake_csv).head(max_len)
+        df_real = pd.read_csv(real_csv)
+        df_fake = pd.read_csv(fake_csv)
+        # read_video needs >= 8 frames: drop shorter videos up front instead of crashing mid-run
+        self.n_skipped = int((df_real.frame_len < 8).sum() + (df_fake.frame_len < 8).sum())
+        df_real = df_real[df_real.frame_len >= 8].head(max_len)
+        df_fake = df_fake[df_fake.frame_len >= 8].head(max_len)
         self.df = pd.concat([df_real, df_fake], axis=0, ignore_index=True)
         self.trans = set_preprocessing(aug_type, aug_quality)
 

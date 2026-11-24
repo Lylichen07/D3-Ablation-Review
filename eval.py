@@ -59,7 +59,7 @@ if __name__ == '__main__':
     
     # Load Dataset
     eval_dataset = D3_dataset_AP(real_csv=real_csv, fake_csv=fake_csv, max_len=1000)
-    print(f"Total samples: {len(eval_dataset)}")
+    print(f"Total samples: {len(eval_dataset)} (skipped {eval_dataset.n_skipped} videos with < 8 frames)")
     
     eval_loader = torch.utils.data.DataLoader(
         eval_dataset, 
@@ -71,13 +71,14 @@ if __name__ == '__main__':
     )
     
     # Eval
-    y_true, y_pred = [], []
+    y_true, y_pred, n_frames = [], [], []
     with torch.no_grad():
         for batch_frames, batch_label in tqdm(eval_loader, desc="Evaluating"):
             batch_inputs = batch_frames.to(device)
             _, _, batch_dis_std = model(batch_inputs)
             y_pred.extend(batch_dis_std.cpu().flatten().numpy())
             y_true.extend(batch_label.cpu().flatten().numpy())
+            n_frames.extend([batch_frames.shape[1]] * len(batch_label))
     
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
@@ -91,6 +92,7 @@ if __name__ == '__main__':
         f"Real CSV: {real_csv}\n"
         f"Fake CSV: {fake_csv}\n"
         f"Total Samples: {len(y_true)}\n"
+        f"Skipped (< 8 frames): {eval_dataset.n_skipped}\n"
         f"AP Score: {ap_score:.4f}\n"
     )
     
@@ -107,3 +109,13 @@ if __name__ == '__main__':
         f.write(result_str)
 
     print(f"\nResults saved to {output_file}")
+
+    # Per-video scores (shuffle=False, so rows follow eval_dataset.df), for AUC / bootstrap / frame-count analysis
+    subset = os.path.splitext(os.path.basename(fake_csv))[0]
+    scores = eval_dataset.df[["content_path", "label"]].assign(
+        n_frames=n_frames, score=y_pred, encoder=encoder_type, seed=seed, subset=subset)
+    assert (scores["label"].to_numpy() == y_true).all(), "score rows out of order with dataset"
+    os.makedirs("results/scores", exist_ok=True)
+    scores_file = f"results/scores/{encoder_type}_s{seed}_{subset}.csv"
+    scores.to_csv(scores_file, index=False)
+    print(f"Per-video scores saved to {scores_file}")
