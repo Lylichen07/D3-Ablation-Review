@@ -1,6 +1,8 @@
 # Datasets and outputs
 GenVideo/
 results/
+doc/build/
+doc/build-ieee/
 
 # Python
 __pycache__/
@@ -17,3 +19,9 @@ env/
 .vscode/
 .idea/
 .DS_Store
+.claude
+.agents
+
+logs/
+skills-lock.json
+CLAUDE.md

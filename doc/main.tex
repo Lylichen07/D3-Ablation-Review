@@ -1,0 +1,461 @@
+\documentclass[conference]{IEEEtran}
+% Official IEEEtran conference template (IEEEtran.cls v1.8b, from CTAN). Build: make (in doc/)
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+
+% ---------------------------------------------------------------------
+% Drafting helpers. Set \draftfalse before submitting: guidance notes
+% disappear, and any placeholder left behind prints in red so it is easy to spot.
+\newif\ifdraft \drafttrue
+\newcommand{\ph}[1]{\textcolor{red}{[#1]}}                      % placeholder to replace
+\newcommand{\tbd}{\ph{--}}                                       % result not available yet
+\newcommand{\guide}[1]{\ifdraft\par\noindent{\color{gray}\small\itshape #1}\par\fi} % writing guidance
+% Figure placeholder: a framed box until the file exists in figures/
+\newcommand{\figbox}[2][\columnwidth]{%
+  \IfFileExists{figures/#2}{\includegraphics[width=#1]{#2}}%
+  {\fbox{\parbox[c][3cm][c]{0.9#1}{\centering\color{red}\small Figure: \detokenize{#2}}}}}
+% ---------------------------------------------------------------------
+
+\begin{document}
+\bstctlcite{IEEEexample:BSTcontrol}
+
+\title{Does D3 Need a Pre-Trained Encoder?\\
+Random-Weight Ablations of Training-Free AI-Generated Video Detection}
+
+\author{\IEEEauthorblockN{Roland Chen}
+\IEEEauthorblockA{School of Electrical Engineering and Computer Science\\
+University of Ottawa, Ottawa, Canada\\
+rchen095@uottawa.ca}
+\and
+\IEEEauthorblockN{Najwa Sougrati}
+\IEEEauthorblockA{School of Electrical Engineering and Computer Science\\
+University of Ottawa, Ottawa, Canada\\
+nsougrat@uottawa.ca}}
+
+\maketitle
+
+\begin{abstract}
+D3 is a training-free detector of AI-generated video. It encodes each frame
+with a pre-trained visual encoder and scores a video by the volatility of the
+second-order differences of its frame features. Its authors report similar
+accuracy with ten encoders, but all ten are pre-trained. We ask whether D3
+needs a pre-trained encoder at all. On GenVideo-Val, we compare two pre-trained
+encoders (X-CLIP B/16 and ResNet-18), the same two architectures with random
+weights (three seeds each), and a random projection of downsampled frames with
+no network. Following a decision rule fixed before any run, the randomly
+initialized encoders reach \ph{XX.X} and \ph{XX.X} mAP, against \ph{XX.X} for
+pre-trained X-CLIP, so the hypothesis is \ph{accepted / rejected / partially
+supported}. \ph{One sentence on the random projection.} We also control for a
+frame-count confound in the evaluation protocol and report chance-corrected
+margins, bootstrap confidence intervals and paired tests. \ph{One sentence on
+what this means for D3.}
+\end{abstract}
+
+\begin{IEEEkeywords}
+AI-generated video detection, training-free detection, random features,
+second-order features, ablation study
+\end{IEEEkeywords}
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Generated video is becoming hard to tell apart from real footage, and
+detectors trained on one generator often fail on the next. D3~\cite{zheng2025d3}
+avoids training altogether. It passes each frame through a pre-trained visual
+encoder, measures how far the features move between consecutive frames (first
+order), then how that movement changes (second order). The score of a video is
+the standard deviation of the second-order sequence. With an X-CLIP
+encoder~\cite{ni2022xclip}, D3 reaches 97.72 mAP on
+GenVideo-Val~\cite{chen2024demamba}.
+
+The D3 authors compare ten encoders and report between 94.28 and 97.72 mAP. They conclude that second-order features stay meaningful
+across feature spaces~\cite[Sec.~5.1]{zheng2025d3}. However, all ten encoders
+are pre-trained. If \emph{which} pre-trained encoder is used barely matters,
+the next question is whether pre-training is needed at all. Networks with
+random weights are known to give useful features~\cite{jarrett2009,saxe2011},
+and random projections preserve distances~\cite{johnson1984}. If D3 relies
+mainly on its temporal statistic, an untrained encoder should do almost as
+well.
+
+We test this with five inference-only conditions: two reproductions with
+pre-trained encoders, the same two architectures with random weights, and a
+random projection with no network. The hypothesis and the decision thresholds
+were fixed in our proposal before any experiment. Our contributions are:
+\begin{itemize}
+  \item a reproduction of two encoder conditions from the D3 paper;
+  \item an ablation with randomly initialized encoders (three seeds each) and
+        a no-network random projection;
+  \item a control for a frame-count confound that we found in the evaluation
+        protocol;
+  \item a statistical reading of the pre-registered thresholds: margins over
+        chance, bootstrap confidence intervals and paired tests.
+\end{itemize}
+Our code is publicly available (see the Code Availability section).
+
+% =====================================================================
+\section{Related Work}
+\label{sec:related}
+
+\textbf{AI-generated video detection.} Most detectors are trained on generated
+videos. Chen \emph{et al.}~\cite{chen2024demamba} release GenVideo, a
+million-scale benchmark, and its validation split GenVideo-Val, which we use.
+D3~\cite{zheng2025d3} needs no training: it only uses a frozen encoder and a
+fixed statistic.
+
+\textbf{Random and untrained networks as feature extractors.} Jarrett
+\emph{et al.}~\cite{jarrett2009} found that a two-stage convolutional network
+with random filters reaches almost 63\% accuracy on Caltech-101, provided
+that it has the right non-linearities and pooling. Saxe
+\emph{et al.}~\cite{saxe2011} showed that convolutional pooling architectures
+are frequency selective and translation invariant even with random weights,
+and used random weights to rank architectures without training. Random Fourier
+features~\cite{rahimi2007} and extreme learning machines~\cite{huang2006elm}
+fix a random first layer and learn only a linear output. Giryes
+\emph{et al.}~\cite{giryes2016} showed that networks with random Gaussian
+weights preserve the metric structure of their input. Deep Image
+Prior~\cite{ulyanov2018dip} showed that the structure of an untrained
+convolutional network already captures much of the statistics of natural
+images.
+
+\textbf{Pre-training without natural images.} Kataoka
+\emph{et al.}~\cite{kataoka2020fractal} pre-train networks on fractal images,
+and Baradad \emph{et al.}~\cite{baradad2021noise} on synthetic noise
+processes. Both obtain useful features without natural images. We go one step
+further and use no training at all.
+
+\textbf{Random projections.} The Johnson--Lindenstrauss
+lemma~\cite{johnson1984} states that a random linear map to a lower dimension
+preserves pairwise distances up to a small relative error, and
+Achlioptas~\cite{achlioptas2003} showed that simple $\pm1$ matrices are
+enough. This motivates our no-network baseline.
+
+% =====================================================================
+\section{Method}
+\label{sec:method}
+
+\subsection{The D3 Score}
+
+Let $x_1,\dots,x_T$ be the frames of a video and $E$ an encoder, with
+features $f_t = E(x_t) \in \mathbb{R}^d$. Following the official
+implementation~\cite{d3code}, D3 computes
+\begin{align}
+  d_t &= \lVert f_{t+1} - f_t \rVert_2, & t &= 1,\dots,T-1,\\
+  a_t &= d_{t+1} - d_t,                 & t &= 1,\dots,T-2,\\
+  s   &= \operatorname{std}(a_1,\dots,a_{T-2}), &&
+\end{align}
+where $\operatorname{std}$ is the sample standard deviation. In the official
+evaluation, a \emph{higher} score indicates a \emph{real} video: average
+precision is computed with real videos as the positive class. D3 has no
+trainable parameter, so changing $E$ is the only way to change the detector.
+
+\subsection{Experimental Conditions}
+
+Table~\ref{tab:conditions} lists the five conditions. Condition~1 is the
+paper's main setting: the vision encoder of X-CLIP B/16~\cite{ni2022xclip}, a
+ViT-B/16~\cite{dosovitskiy2021vit} with cross-frame communication, using the
+pooled output. Condition~2 is ResNet-18~\cite{he2016resnet} pre-trained on
+ImageNet, without its classification layer. Conditions~3 and~4 use the same
+architectures with random weights: torchvision's default initialization for
+ResNet-18, and the Hugging Face default initialization for X-CLIP (zero-mean
+Gaussian weights). Condition~5 has no network. It average-pools each frame to
+$32\times32$ pixels and multiplies the resulting 3072-dimensional vector by a
+fixed matrix $W \in \mathbb{R}^{3072\times768}$ with entries drawn from
+$\mathcal{N}(0, 1/768)$. The seed fixes the random weights. The same seed
+always gives the same weights.
+
+\begin{table}[t]
+\caption{Experimental conditions. Conditions 3--5 are run with seeds 0, 1
+and 2.}
+\label{tab:conditions}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\# & Encoder & Weights & Dim. \\
+\midrule
+1 & X-CLIP B/16 vision encoder & pre-trained (Kinetics-400) & 768 \\
+2 & ResNet-18                  & pre-trained (ImageNet)     & 512 \\
+3 & ResNet-18                  & random                     & 512 \\
+4 & X-CLIP B/16 vision encoder & random                     & 768 \\
+5 & Random projection          & random, no network         & 768 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hypothesis and Decision Rule}
+\label{sec:rule}
+
+\textbf{Hypothesis.} D3's performance does not depend on the learned content
+of its encoder: with random weights, D3 keeps most of its performance.
+
+\textbf{Decision rule (fixed before any run).} We use the mean mAP over three
+seeds of conditions~3 and~4. If both exceed 88, the hypothesis is accepted. If
+both are below 70, it is rejected. Any other outcome, including disagreement
+between the two architectures, indicates partial dependence. Condition~5 is
+read separately: reaching 88 with no network would show that no learned
+representation is needed at all. Conditions~1 and~2 are reproductions,
+checked against the reported 97.72 and 96.39 mAP.
+
+\textbf{Reading the thresholds.} The thresholds were set before any result,
+and we do not move them. Instead, we add statistics beside them. First, chance
+performance is not 50 mAP. With real videos as the positive class, a random
+score has an expected AP equal to the share of real videos in the run. This
+share varies with the size of each fake subset, from 50.0\% to 94.7\%
+(Table~\ref{tab:subsets}). The mean over the ten subsets, $m_0 = 60.23$,
+depends only on the class counts. We measure each condition $c$ by the share
+of the margin over chance that it keeps:
+\begin{equation}
+  \rho_c = \frac{\mathrm{mAP}_c - m_0}{m_{\mathrm{ref}} - m_0},
+\end{equation}
+with $m_{\mathrm{ref}} = 97.72$, the X-CLIP result reported in the paper.
+Since $m_0$ and $m_{\mathrm{ref}}$ are both known before any run, the
+thresholds translate into fixed shares: 88 mAP means keeping 74.1\% of the
+margin over chance, and 70 mAP means keeping 26.1\%. Accepting the hypothesis
+thus requires random encoders to keep about three quarters of what the
+pre-trained encoder gains over chance, and rejecting it requires them to lose
+about three quarters. Second, we attach 95\% bootstrap confidence intervals to
+every mAP (Sec.~\ref{sec:stats}). We call a verdict \emph{robust} when the
+interval of each random encoder lies entirely on the same side of the
+threshold as its mean.
+
+% =====================================================================
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Data}
+
+GenVideo-Val~\cite{chen2024demamba} contains real videos from
+MSR-VTT~\cite{xu2016msrvtt} and ten subsets of generated videos
+(Table~\ref{tab:subsets}). Each run pairs the same 1000 real videos with one
+fake subset, capped at its first 1000 videos. Videos with fewer than 8 frames
+cannot be scored and are excluded: 31 fakes in total (2 in Gen2, 1 in
+MoonValley and 28 in WildScrape). mAP is the unweighted mean of the ten
+per-subset APs, as in the paper, so Sora (56 fakes) counts as much as Gen2
+(1000 fakes).
+
+\begin{table}[t]
+\caption{Fake subsets of GenVideo-Val and AP per condition (paper protocol,
+seeds averaged). ``8-fr.'': share of fakes scored on 8 frames instead of 16;
+all real videos are scored on 16. ``Chance'': expected AP of a random score.}
+\label{tab:subsets}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lrrr|rrrrr@{}}
+\toprule
+ & & 8-fr. & & \multicolumn{5}{c}{AP (\%) for condition} \\
+Subset & Fakes & (\%) & Chance & 1 & 2 & 3 & 4 & 5 \\
+\midrule
+Crafter     & 1000 &  86.0 & 50.00 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+Gen2        & 1000 &   0.1 & 50.00 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+HotShot     &  607 & 100.0 & 62.23 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+Lavie       & 1000 &   0.1 & 50.00 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+ModelScope  &  700 &   0.0 & 58.82 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+MoonValley  &  581 & 100.0 & 63.25 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+MorphStudio &  619 &   0.0 & 61.77 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+Show\_1     &  700 &   0.0 & 58.82 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+Sora        &   56 &   0.0 & 94.70 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+WildScrape  &  896 &  12.3 & 52.74 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\midrule
+mAP         &      &       & 60.23 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Preprocessing}
+
+We keep the official preprocessing~\cite{d3code}, so that conditions~1 and~2
+reproduce the paper. Frames are extracted at 8~fps from a 3-second clip. For
+videos longer than 4~s, the clip starts at a random whole second. This applies
+to all real videos, all Sora videos and 212 WildScrape videos. Each video is
+scored on its first 16 frames (2~s), or on its first 8 frames if it has fewer
+than 16. Each frame is cropped by 10\% on both sides of its longer dimension,
+resized to $224\times224$, and normalized with ImageNet statistics. The same
+normalization is used for every encoder, including X-CLIP. As in the original
+code, frames are read in OpenCV's BGR channel order. X-CLIP's vision encoder
+exchanges information across frames in groups of 8, so a 16-frame video is
+processed as two independent groups.
+
+\subsection{Frame-Count Control}
+\label{sec:f8}
+
+Under this protocol, every real video is scored on 16 frames, but every fake
+in HotShot and MoonValley, and 86\% of the fakes in Crafter, are scored on 8
+(Table~\ref{tab:subsets}). With 8 frames, the score is the standard deviation
+of 6 values over 1~s instead of 14 values over 2~s. Frame count alone would
+therefore separate real from fake perfectly on HotShot and MoonValley. To
+measure how much of each result this explains, we repeat every condition with
+all videos scored on their first 8 frames (seed 0 only).
+
+\subsection{Statistical Analysis}
+\label{sec:stats}
+
+We save the score of every video, so all statistics are computed from the same
+runs. We estimate 95\% percentile bootstrap confidence
+intervals~\cite{efron1993} with $B = \ph{2000}$ replicates. Each replicate
+resamples the 1000 real videos once, since they are shared by all subsets,
+and the fakes of each subset independently. It then recomputes every AP and
+the mAP. For random conditions, the three seeds are averaged within each
+replicate. To compare a pre-trained and a random encoder, we use the same
+resampled videos for both and report the confidence interval of the mAP
+difference. We also report AUC, whose chance level is 0.5 whatever the class
+balance, and the Spearman correlation of per-video scores between encoders.
+\guide{Update this paragraph if the analysis script differs.}
+
+\subsection{Implementation}
+
+All 160 runs (110 for the paper protocol and 50 for the frame-count control)
+were made on one machine, with an AMD Ryzen AI 7 350 CPU and a Radeon 860M GPU
+(ROCm), using PyTorch 2.8, torchvision 0.23 and Hugging Face Transformers 4.57.
+A full run took \ph{time}.
+
+% =====================================================================
+\section{Results}
+\label{sec:results}
+
+\guide{Fill in once Najwa's runs are in. Report numbers with two decimals in
+the tables and one in the text.}
+
+\subsection{Reproduction}
+
+\ph{Pre-trained X-CLIP reaches XX.XX mAP and pre-trained ResNet-18 XX.XX,
+against 97.72 and 96.39 reported~\cite{zheng2025d3}. One sentence on any gap
+and its likely cause: video selection, random clip choice, excluded short
+videos.}
+
+\subsection{Random Encoders and the Pre-Registered Verdict}
+
+\begin{table}[t]
+\caption{mAP per condition. Mean $\pm$ standard deviation over three seeds for
+random conditions; 95\% bootstrap CI; $\rho$: share of the margin over chance
+kept (Sec.~\ref{sec:rule}); last column: all videos scored on 8 frames.}
+\label{tab:summary}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}clcccc@{}}
+\toprule
+\# & Condition & mAP & 95\% CI & $\rho$ (\%) & mAP, 8 fr. \\
+\midrule
+1 & X-CLIP, pre-trained  & \tbd         & \tbd & \tbd & \tbd \\
+2 & ResNet-18, pre-trained & \tbd       & \tbd & \tbd & \tbd \\
+3 & ResNet-18, random    & \tbd$\pm$\tbd & \tbd & \tbd & \tbd \\
+4 & X-CLIP, random       & \tbd$\pm$\tbd & \tbd & \tbd & \tbd \\
+5 & Random projection    & \tbd$\pm$\tbd & \tbd & \tbd & \tbd \\
+\midrule
+  & Chance               & 60.23        & --   & 0    & 60.23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\ph{Verdict, stated exactly as the pre-registered rule gives it:
+``ResNet-18-rand reaches XX.X and X-CLIP-rand XX.X mAP; both are above 88, so
+the hypothesis is accepted.'' Then: is it robust (bootstrap CIs vs
+thresholds)? How large is the paired difference to the pre-trained encoder of
+the same architecture, with its CI? Seed spread. RandProj, read separately.}
+
+\subsection{Frame-Count Control}
+
+\ph{mAP with all videos on 8 frames (Table~\ref{tab:summary}, last column), and
+the change on HotShot, MoonValley and Crafter, the three subsets where frame
+count differs. Does the verdict change under the control?}
+
+\begin{figure}[t]
+\centering
+\figbox{f8_per_subset.pdf}
+\caption{\ph{AP per subset under the paper protocol and with all videos scored
+on 8 frames, for each condition.}}
+\label{fig:f8}
+\end{figure}
+\guide{Optional figure: drop it if the 5-page limit is tight.}
+
+\subsection{Where Pre-Training Matters}
+
+\ph{Subsets with the largest gap between pre-trained and random encoders
+(Table~\ref{tab:subsets}), with AUC. Spearman correlation of per-video scores
+between encoders: do random encoders rank videos like the pre-trained ones?}
+
+% =====================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What Carries the Performance}
+
+\ph{Interpretation, depending on the verdict: is the second-order statistic,
+the architecture, or the learned representation doing the work?}
+
+For the random projection, a possible explanation follows from the
+Johnson--Lindenstrauss lemma~\cite{johnson1984,achlioptas2003}. For a fixed
+vector $v$, $\lVert W^\top v\rVert^2 / \lVert v\rVert^2$ follows a $\chi^2$
+distribution with $k = 768$ degrees of freedom divided by $k$. Its relative
+standard deviation is $\sqrt{2/k} \approx 5\%$. The distances $d_t$ that D3
+computes on projected features are therefore close to the distances between
+the raw $32\times32$ frames, whatever the seed. Condition~5 then measures D3
+on downsampled pixels, and its result should depend little on the seed:
+\ph{observed seed spread}.
+
+\subsection{Implications for D3}
+
+\ph{What the result means for the claim that second-order features remain
+meaningful across feature spaces~\cite[Sec.~5.1]{zheng2025d3}: does it extend
+to untrained feature spaces, or is it narrower than stated? Practical
+consequence: cost, or the choice of encoder.}
+
+\subsection{Limitations}
+
+\begin{itemize}
+  \item We test one benchmark, GenVideo-Val. The other datasets of the
+        paper (EvalCrafter, VideoPhy, VidProM) are not tested.
+  \item Every run uses the same 1000 real videos, so errors on the real side
+        are shared across subsets. Subsets are capped at 1000 fakes.
+  \item mAP weights subsets equally. Sora has only 56 fakes and a chance AP of
+        94.7, so it carries little information about any condition.
+  \item Each real video is scored on one random 2-second clip. Our seeds do
+        not measure how much the choice of clip changes the results.
+  \item Random conditions use three seeds, and the frame-count control uses
+        one.
+  \item We keep the original preprocessing (ImageNet normalization and BGR
+        order for every encoder). It may not suit X-CLIP, which was trained
+        with CLIP statistics on RGB frames.
+  \item Random weights follow library defaults. In inference mode, the batch
+        normalization layers of the random ResNet-18 use their initial
+        statistics and act as the identity. Other initializations may behave
+        differently.
+\end{itemize}
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+\ph{Three to four sentences: the question, the pre-registered verdict and its
+robustness, the frame-count control, and what it means for training-free
+detection.}
+
+% =====================================================================
+\section*{Code Availability}
+
+Our code is available at
+\url{https://github.com/Lylichen07/D3-Ablation-Review}
+\ph{check that the repository is public, or state where the code is
+submitted}. It builds on the official D3 implementation~\cite{d3code} (MIT
+License). The D3 score and the preprocessing are unchanged. Data
+preparation follows DeMamba~\cite{chen2024demamba}. Our additions are the
+randomly initialized encoders, the random-projection baseline, the seeding of
+random weights, the exclusion of videos with fewer than 8 frames, per-video
+score files, the 8-frame control, and the scripts that run the experiments and
+analyze the results.
+
+{\small
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+}
+
+\end{document}
