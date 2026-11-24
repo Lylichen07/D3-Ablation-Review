@@ -16,6 +16,8 @@ LOG_DIR = Path("logs")
 SUBSETS = ["Crafter", "Gen2", "HotShot", "Lavie", "ModelScope",
            "MoonValley", "MorphStudio", "Show_1", "Sora", "WildScrape"]
 CONDITIONS = ["XCLIP-16", "ResNet-18", "ResNet-18-rand", "XCLIP-16-rand", "RandProj"]
+# "-f8" = control run with every video scored on its first 8 frames (eval.py --num-frames 8)
+CONDITIONS += [c + "-f8" for c in CONDITIONS]
 ACCEPT, REJECT = 88.0, 70.0
 
 rows, missing = [], []
@@ -83,7 +85,7 @@ if c3 is not None and c4 is not None:
 if "RandProj" in m:
     print(f"RandProj (read separately): {m['RandProj']:.2f} mAP")
 
-expected = 2 * len(SUBSETS) + 3 * 3 * len(SUBSETS)
+expected = 2 * len(SUBSETS) + 3 * 3 * len(SUBSETS) + 5 * len(SUBSETS)  # paper protocol + f8 (seed 0)
 print(f"\nRuns parsed: {len(df)} / {expected}")
 if missing:
     print("Logs without an AP score (failed or unfinished):")

@@ -143,6 +143,10 @@ python eval.py --gpu-id 0 --loss l2 --encoder XCLIP-16 --real-csv GenVideo/csv/r
 
 To run a different ablation condition, change `--encoder` to the value listed in [Experimental Conditions](#experimental-conditions).
 
+By default, each video is scored on its first 16 frames (2 s at 8 fps), or on its first 8 frames when it is shorter than 16, as in the paper. All real videos use 16 frames, but most fakes in Crafter, HotShot and MoonValley use 8, so frame count alone separates real from fake there. To control for this, `--num-frames 8` scores every video on its first 8 frames. These runs are named with an `-f8` suffix (for example `RandProj-f8`).
+
+`rerun_missing.sh` runs every condition. `./rerun_missing.sh paper` runs only the paper protocol, and `./rerun_missing.sh f8` runs only the 8-frame control (seed 0).
+
 Videos with fewer than 8 frames are skipped, and the number skipped is printed. Each run writes its AP to `results/result_<timestamp>.txt`. It also writes one score per video (label, number of frames used, score) to `results/scores/<encoder>_s<seed>_<subset>.csv`.
 
 `--seed` (default 42) sets the random weights of the randomly initialized encoders (`ResNet-18-rand`, `XCLIP-16-rand`, `RandProj`). The same seed always gives the same weights. Each of these conditions is run with three seeds, and the mean mAP is reported:

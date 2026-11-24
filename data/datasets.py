@@ -33,7 +33,7 @@ def get_number_from_filename(filename):
     return float('inf')  
 
 
-def read_video(folder_path, trans):
+def read_video(folder_path, trans, num_frames=None):
     frames = []
     image_paths = sorted(os.listdir(folder_path), key=get_number_from_filename)
     total_frames = len(image_paths)
@@ -41,8 +41,9 @@ def read_video(folder_path, trans):
     if total_frames < 8:
         raise ValueError(f"No enough frames found in {folder_path}.")
 
-    set_frame = 8 if total_frames < 16 else 16
-    max_frame = min(set_frame, total_frames)
+    # Paper protocol: first 16 frames (2 s at 8 fps) if available, else first 8.
+    # num_frames forces the same length for every video, so real and fake are scored on equal windows.
+    max_frame = num_frames or (8 if total_frames < 16 else 16)
     for i in range(max_frame):
         image_path = os.path.join(folder_path, image_paths[i])
         image = cv2.imread(image_path)
@@ -69,8 +70,9 @@ def set_preprocessing(aug_type, aug_quality):
 
 class D3_dataset_AP(Dataset):
 
-    def __init__(self, real_csv, fake_csv, max_len = 9999999, aug_type = None, aug_quality = None):
+    def __init__(self, real_csv, fake_csv, max_len = 9999999, aug_type = None, aug_quality = None, num_frames = None):
         super(D3_dataset_AP, self).__init__()
+        self.num_frames = num_frames
         df_real = pd.read_csv(real_csv)
         df_fake = pd.read_csv(fake_csv)
         # read_video needs >= 8 frames: drop shorter videos up front instead of crashing mid-run
@@ -86,5 +88,5 @@ class D3_dataset_AP(Dataset):
     def __getitem__(self, index):
         label = self.df.loc[index]['label']
         frame_path = self.df.loc[index]['content_path']
-        frames = read_video(frame_path,trans=self.trans)
+        frames = read_video(frame_path, trans=self.trans, num_frames=self.num_frames)
         return frames, label

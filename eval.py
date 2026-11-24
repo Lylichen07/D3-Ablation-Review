@@ -31,6 +31,8 @@ if __name__ == '__main__':
                         help='Path to the real data CSV file ')
     parser.add_argument('--fake-csv', type=str, default=None,
                         help='Path to the fake/synthetic data CSV file')
+    parser.add_argument('--num-frames', type=int, default=None, choices=[8],
+                        help='Score every video on its first N frames (default: paper protocol, 16 if available else 8)')
     args = parser.parse_args()
 
     seed = args.seed
@@ -39,6 +41,9 @@ if __name__ == '__main__':
     encoder_type = args.encoder
     real_csv = args.real_csv
     fake_csv = args.fake_csv
+    num_frames = args.num_frames
+    # Fixed-length runs get their own condition name (e.g. RandProj-f8), used in score files and log names
+    condition = f"{encoder_type}-f{num_frames}" if num_frames else encoder_type
 
     # real_csv = 'datasets/csv/t1.csv'
     # fake_csv = 'datasets/csv/t2.csv'
@@ -46,7 +51,7 @@ if __name__ == '__main__':
     # Seed before building the model so randomly initialized encoders are reproducible
     seed_everything(seed)
 
-    print(f"Starting AP evaluation for {encoder_type} with {loss_type} loss (seed {seed})")
+    print(f"Starting AP evaluation for {condition} with {loss_type} loss (seed {seed})")
     print(f"Real CSV: {real_csv}")
     print(f"Fake CSV: {fake_csv}")
     
@@ -58,14 +63,14 @@ if __name__ == '__main__':
     model.eval()
     
     # Load Dataset
-    eval_dataset = D3_dataset_AP(real_csv=real_csv, fake_csv=fake_csv, max_len=1000)
+    eval_dataset = D3_dataset_AP(real_csv=real_csv, fake_csv=fake_csv, max_len=1000, num_frames=num_frames)
     print(f"Total samples: {len(eval_dataset)} (skipped {eval_dataset.n_skipped} videos with < 8 frames)")
     
     eval_loader = torch.utils.data.DataLoader(
         eval_dataset, 
         batch_size=1, 
         shuffle=False, 
-        num_workers=1, 
+        num_workers=4,  # 1 worker starves the light encoders (RandProj) on CPU
         pin_memory=device.type == "cuda",
         drop_last=False
     )
@@ -89,6 +94,7 @@ if __name__ == '__main__':
         f"Encoder: {encoder_type}\n"
         f"Loss Type: {loss_type}\n"
         f"Seed: {seed}\n"
+        f"Frames: {num_frames or 'paper (16, or 8 if shorter)'}\n"
         f"Real CSV: {real_csv}\n"
         f"Fake CSV: {fake_csv}\n"
         f"Total Samples: {len(y_true)}\n"
@@ -113,9 +119,9 @@ if __name__ == '__main__':
     # Per-video scores (shuffle=False, so rows follow eval_dataset.df), for AUC / bootstrap / frame-count analysis
     subset = os.path.splitext(os.path.basename(fake_csv))[0]
     scores = eval_dataset.df[["content_path", "label"]].assign(
-        n_frames=n_frames, score=y_pred, encoder=encoder_type, seed=seed, subset=subset)
+        n_frames=n_frames, score=y_pred, condition=condition, seed=seed, subset=subset)
     assert (scores["label"].to_numpy() == y_true).all(), "score rows out of order with dataset"
     os.makedirs("results/scores", exist_ok=True)
-    scores_file = f"results/scores/{encoder_type}_s{seed}_{subset}.csv"
+    scores_file = f"results/scores/{condition}_s{seed}_{subset}.csv"
     scores.to_csv(scores_file, index=False)
     print(f"Per-video scores saved to {scores_file}")
