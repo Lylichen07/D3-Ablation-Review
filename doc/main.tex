@@ -12,7 +12,7 @@
 % ---------------------------------------------------------------------
 % Drafting helpers. Set \draftfalse before submitting: guidance notes
 % disappear, and any placeholder left behind prints in red so it is easy to spot.
-\newif\ifdraft \drafttrue
+\newif\ifdraft \draftfalse
 \newcommand{\ph}[1]{\textcolor{red}{[#1]}}                      % placeholder to replace
 \newcommand{\tbd}{\ph{--}}                                       % result not available yet
 \newcommand{\guide}[1]{\ifdraft\par\noindent{\color{gray}\small\itshape #1}\par\fi} % writing guidance
@@ -97,7 +97,8 @@ were fixed in our proposal before any experiment. Our contributions are:
   \item an ablation with randomly initialized encoders (three seeds each) and
         a no-network random projection;
   \item a statistical reading of the pre-registered thresholds: margins over
-        chance, seed-level checks and a paired test across generators;
+        chance, seed-level checks, a paired test and bootstrap intervals
+        across generators;
   \item a frame-count confound that we found in the evaluation protocol, with
         a measurement and a bound on its effect on the verdict.
 \end{itemize}
@@ -247,8 +248,6 @@ fake subset, capped at its first 1000 videos. Videos with fewer than 8 frames
 cannot be scored. The evaluation code stops on them, so no completed run
 contains one. mAP is the unweighted mean of the ten per-subset APs, as in the
 paper, so Sora (56 fakes) counts as much as Gen2 (1000 fakes).
-\guide{Fake counts and chance come from Najwa's CSVs (the data of the runs).
-The 8-frame shares still come from Roland's copy: replace them with Najwa's.}
 
 \begin{table}[t]
 \caption{Fake subsets of GenVideo-Val and AP (\%) per condition, seeds
@@ -263,16 +262,16 @@ videos are scored on 16. ``Chance'': expected AP of a random score.}
  & & 8-fr. & & \multicolumn{5}{c}{AP (\%) for condition} \\
 Subset & Fakes & (\%) & Chance & 1 & 2 & 3 & 4 & 5 \\
 \midrule
-Crafter     & 1000 &  86.0 & 50.00 & 98.59 & 97.35 & 89.02 & 86.49 & 91.35 \\
-Gen2        & 1000 &   0.1 & 50.00 & 99.32 & 99.16 & 94.68 & 92.15 & 97.19 \\
+Crafter     & 1000 &  87.1 & 50.00 & 98.59 & 97.35 & 89.02 & 86.49 & 91.35 \\
+Gen2        & 1000 &   0.0 & 50.00 & 99.32 & 99.16 & 94.68 & 92.15 & 97.19 \\
 HotShot     &  700 & 100.0 & 58.82 & 98.45 & 98.04 & 94.96 & 94.28 & 96.47 \\
-Lavie       & 1000 &   0.1 & 50.00 & 97.60 & 95.16 & 80.67 & 78.09 & 86.79 \\
+Lavie       & 1000 &   0.0 & 50.00 & 97.60 & 95.16 & 80.67 & 78.09 & 86.79 \\
 ModelScope  &  700 &   0.0 & 58.82 & 97.18 & 94.61 & 88.20 & 87.56 & 92.62 \\
 MoonValley  &  626 & 100.0 & 61.50 & 99.47 & 99.26 & 97.40 & 95.45 & 97.48 \\
 MorphStudio &  700 &   0.0 & 58.82 & 98.59 & 97.23 & 85.80 & 81.67 & 92.03 \\
 Show\_1     &  700 &   0.0 & 58.82 & 99.08 & 99.14 & 96.41 & 95.11 & 97.71 \\
 Sora        &   56 &   0.0 & 94.70 & 99.84 & 99.73 & 98.89 & 98.65 & 99.24 \\
-WildScrape  &  914 &  12.3 & 52.25 & 92.85 & 87.93 & 85.20 & 84.82 & 84.43 \\
+WildScrape  &  914 &  13.3 & 52.25 & 92.85 & 87.93 & 85.20 & 84.82 & 84.43 \\
 \midrule
 mAP         &      &       & 59.37 & 98.10 & 96.76 & 91.12 & 89.43 & 93.53 \\
 \bottomrule
@@ -284,7 +283,7 @@ mAP         &      &       & 59.37 & 98.10 & 96.76 & 91.12 & 89.43 & 93.53 \\
 We keep the official preprocessing~\cite{d3code}, so that conditions~1 and~2
 reproduce the paper. Frames are extracted at 8~fps from a 3-second clip. For
 videos longer than 4~s, the clip starts at a random whole second. This applies
-to all real videos, all Sora videos and the WildScrape videos longer than 4~s. Each video is
+to all real videos, all Sora videos and part of WildScrape. Each video is
 scored on its first 16 frames (2~s), or on its first 8 frames if it has fewer
 than 16. Each frame is cropped by 10\% on both sides of its longer dimension,
 resized to $224\times224$, and normalized with ImageNet statistics. The same
@@ -297,7 +296,7 @@ processed as two independent groups.
 \label{sec:confound}
 
 Under this protocol, every real video is scored on 16 frames, but every fake
-in HotShot and MoonValley, and 86\% of the fakes in Crafter, are scored on 8
+in HotShot and MoonValley, and 87\% of the fakes in Crafter, are scored on 8
 (Table~\ref{tab:subsets}). With 8 frames, the score is the standard deviation
 of 6 values over 1~s instead of 14 values over 2~s, which tends to lower it
 and makes these fakes look more generated. Frame count alone would separate
@@ -409,7 +408,7 @@ remains once frame counts are equal. Here, the confound is worth about
 We did not measure it for the other conditions, but we can bound its effect
 on the verdict. Removing the confound is expected to lower AP mainly on the
 three subsets where most fakes use 8 frames, each of which weighs one tenth of
-the mAP; WildScrape (12\% of fakes) is affected much less. X-CLIP-rand
+the mAP; WildScrape (13\% of fakes) is affected much less. X-CLIP-rand
 would fall below 88 only if the confound were worth more than 4.8~AP on
 average on HotShot, MoonValley and Crafter, about three times what we
 measured. ResNet-18-rand would need more than 10.4~AP.
@@ -422,9 +421,10 @@ mAP.}
 The gain from pre-training is uneven (Table~\ref{tab:subsets}). It is largest
 on Lavie (+19.5 AP for X-CLIP, +14.5 for ResNet-18) and MorphStudio (+16.9 and
 +11.4), and smallest on Sora (+1.2 and +0.8), where chance is already 94.7.
-WildScrape is the hardest subset for every condition. There, the random
-projection does as well as the random networks (84.4 against 84.8 and 85.2),
-and only pre-trained X-CLIP stands out (92.9).
+WildScrape is the hardest subset for the pre-trained encoders and the random
+projection; for the random networks, Lavie is harder (80.7 and 78.1). On
+WildScrape, the random projection does nearly as well as the random networks
+(84.4 against 85.2 and 84.8), and only pre-trained X-CLIP stands out (92.9).
 
 % =====================================================================
 \section{Discussion}
