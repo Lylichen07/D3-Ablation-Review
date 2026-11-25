@@ -52,9 +52,10 @@ weights (three seeds each), and a random projection of downsampled frames with
 no network. Following a decision rule fixed before any run, the randomly
 initialized ResNet-18 and X-CLIP reach 91.1 and 89.4 mAP, against 98.1 for
 pre-trained X-CLIP, so the hypothesis is accepted: they keep 82\% and 78\% of
-the margin over chance reported for D3. The random projection, with no network,
-reaches 93.5 mAP. Pre-training still helps on every one of the ten generators
-(sign test, $p = 0.002$), by 5.6 and 8.7 mAP on average. We also identify a
+the margin that D3 reports over chance (97.7 against 60.2 mAP). The random
+projection, with no network, reaches 93.5 mAP. Pre-training still helps on
+every one of the ten generators (sign test, $p = 0.002$), by 5.6 mAP on average
+for ResNet-18 and 8.7 for X-CLIP. We also identify a
 frame-count confound in the evaluation protocol and bound its effect on our
 verdict. D3's signal comes mainly from its second-order statistic;
 pre-training refines it rather than creates it.
@@ -207,8 +208,12 @@ read separately: reaching 88 with no network would show that no learned
 representation is needed at all. Conditions~1 and~2 are reproductions,
 checked against the reported 97.72 and 96.39 mAP.
 
-\textbf{Reading the thresholds.} The thresholds were set before any result,
-and we do not move them. Instead, we add statistics beside them. First, chance
+\textbf{Reading the thresholds.} We chose 88 and 70 by judgment when writing
+the proposal, with no statistical model behind them. For reference, 88 is
+6.3~mAP below the weakest of the ten pre-trained encoders reported for
+D3~(94.28). The thresholds were set before any result, and we do not move
+them. Instead, we add three readings beside them, all defined after the
+proposal. First, chance
 performance is not 50 mAP. With real videos as the positive class, a random
 score has an expected AP equal to the share of real videos in the run. This
 share varies with the size of each fake subset, from 50.0\% to 94.7\%
@@ -226,7 +231,8 @@ thus requires random encoders to keep about three quarters of what the
 pre-trained encoder gains over chance, and rejecting it requires them to lose
 about three quarters. Second, we check the verdict against the seed: we call
 it \emph{robust to the seed} when every seed of each random encoder falls on
-the same side of the threshold as its mean.
+the same side of the threshold as its mean. Third, we check it against the
+choice of generators, with a bootstrap over subsets (Sec.~\ref{sec:stats}).
 
 % =====================================================================
 \section{Experimental Setup}
@@ -312,7 +318,11 @@ we observe. Over seeds, we report the mean and standard deviation of each
 random condition's mAP and check each seed against the thresholds. Over
 generators, we compare a pre-trained encoder with its random version by
 treating the ten subsets as paired observations, and apply an exact two-sided
-sign test to the per-subset AP differences. We also report the share of the
+sign test to the per-subset AP differences. We also resample the ten subsets
+with replacement (10\,000 resamples) to obtain 95\% percentile bootstrap
+intervals~\cite{efron1993} on mAP and on the gain from pre-training, and the
+share of resamples in which a random encoder falls below 88. With only ten
+subsets, these intervals are approximate. We also report the share of the
 margin over chance kept, $\rho$ (Sec.~\ref{sec:rule}).
 
 \subsection{Implementation}
@@ -320,12 +330,10 @@ margin over chance kept, $\rho$ (Sec.~\ref{sec:rule}).
 All 110 runs (5 conditions, 3 seeds for the random ones, 10 subsets) were made
 with the official evaluation code, extended with seeds, on one machine with an
 AMD Ryzen AI 7 350 CPU and a Radeon 860M GPU (ROCm), using PyTorch 2.8,
-torchvision 0.23 and Hugging Face Transformers 4.57. A full run took
-\ph{time}. The frame-count measurement (Sec.~\ref{sec:res-confound}) was made
+torchvision 0.23 and Hugging Face Transformers 4.57. The 110 runs took about
+a day and a half in total. The frame-count measurement (Sec.~\ref{sec:res-confound}) was made
 on a second machine (AMD Ryzen 5 5600H, CPU only) with its own copy of the
 data, under both protocols.
-\guide{Check the run time and the library versions on Najwa's machine.}
-
 % =====================================================================
 \section{Results}
 \label{sec:results}
@@ -335,30 +343,32 @@ data, under both protocols.
 Pre-trained X-CLIP reaches 98.10 mAP and pre-trained ResNet-18 96.76, against
 97.72 and 96.39 reported~\cite{zheng2025d3} (Table~\ref{tab:summary}). Both
 are 0.4 above the reported values, a gap that the selection of videos (the
-first 1000 of each subset) and the random clip of each real video can explain.
-We consider both conditions reproduced.
+first 1000 of each subset) and the random clip of each real video may
+explain; we did not test this. We consider both conditions reproduced.
 
 \begin{table}[t]
 \caption{mAP per condition: mean $\pm$ standard deviation over three seeds
-for random conditions, lowest and highest seed, and $\rho$, the share of the
-margin over chance kept (Sec.~\ref{sec:rule}).}
+for random conditions, lowest and highest seed, 95\% bootstrap interval over
+the ten generators (Sec.~\ref{sec:stats}), and $\rho$, the share of the margin
+over chance kept (Sec.~\ref{sec:rule}). $\rho$ is relative to the reported
+97.72, so our X-CLIP run exceeds 100\%.}
 \label{tab:summary}
 \centering
 \footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}clccc@{}}
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}clcccc@{}}
 \toprule
-\# & Condition & mAP & Seeds & $\rho$ (\%) \\
+\# & Condition & mAP & Seeds & Generators & $\rho$ (\%) \\
 \midrule
-1 & X-CLIP, pre-trained    & 98.10            & --          & 101.0 \\
-2 & ResNet-18, pre-trained & 96.76            & --          & 97.4 \\
-3 & ResNet-18, random      & 91.12 $\pm$ 0.78 & 90.30--91.84 & 82.4 \\
-4 & X-CLIP, random         & 89.43 $\pm$ 0.11 & 89.31--89.51 & 77.9 \\
-5 & Random projection      & 93.53 $\pm$ 0.01 & 93.52--93.54 & 88.8 \\
+1 & X-CLIP, pre-trained    & 98.10            & --           & 96.7--99.1 & 101.0 \\
+2 & ResNet-18, pre-trained & 96.76            & --           & 94.4--98.5 & 97.4 \\
+3 & ResNet-18, random      & 91.12 $\pm$ 0.78 & 90.30--91.84 & 87.4--94.6 & 82.4 \\
+4 & X-CLIP, random         & 89.43 $\pm$ 0.11 & 89.31--89.51 & 85.4--93.3 & 77.9 \\
+5 & Random projection      & 93.53 $\pm$ 0.01 & 93.52--93.54 & 90.5--96.3 & 88.8 \\
 \midrule
-  & Accept threshold       & 88.00            & --          & 74.1 \\
-  & Reject threshold       & 70.00            & --          & 26.1 \\
-  & Chance                 & 60.23            & --          & 0.0 \\
+  & Accept threshold       & 88.00            & --           & --         & 74.1 \\
+  & Reject threshold       & 70.00            & --           & --         & 26.1 \\
+  & Chance                 & 60.23            & --           & --         & 0.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -368,10 +378,15 @@ margin over chance kept (Sec.~\ref{sec:rule}).}
 The randomly initialized ResNet-18 and X-CLIP reach 91.12 and 89.43 mAP
 (Table~\ref{tab:summary}). Both exceed 88, so by the pre-registered rule
 \textbf{the hypothesis is accepted}. The verdict is robust to the seed: every
-seed of both encoders is above 88, the lowest at 89.31. The random encoders
-keep 82.4\% and 77.9\% of the margin over chance, above the 74.1\% that the
-accept threshold represents. X-CLIP-rand passes with the smallest margin,
-1.4~mAP, but its seeds vary by only 0.11.
+seed of both encoders is above 88, the lowest at 89.31, so any accept
+threshold up to 89.31 gives the same verdict on every seed. It is less robust
+to the choice of generators. Over resampled subsets, the 95\% intervals are
+87.4--94.6 for ResNet-18-rand and 85.4--93.3 for X-CLIP-rand, which falls
+below 88 in 25\% of resamples (ResNet-18-rand in 5\%). X-CLIP-rand passes with
+the smallest margin, 1.4~mAP: its seeds vary by only 0.11, but its AP varies
+much more from one generator to another. The random encoders keep 82.4\% and
+77.9\% of the margin over chance, above the 74.1\% that the accept threshold
+represents.
 
 Read separately, the random projection reaches 93.53 mAP with no network, so
 it would pass the accept threshold too. It even beats both random networks, on
@@ -379,21 +394,25 @@ it would pass the accept threshold too. It even beats both random networks, on
 
 Pre-training still helps. Each pre-trained encoder beats its random version on
 all ten subsets (sign test, $p = 0.002$ for both architectures), by 5.6~mAP on
-average for ResNet-18 and 8.7 for X-CLIP.
+average for ResNet-18 and 8.7 for X-CLIP (95\% intervals 3.2--8.5 and
+5.4--12.3).
 
 \subsection{Frame-Count Confound}
 \label{sec:res-confound}
 
 We scored HotShot with the random projection (seed 0) on the second machine,
 once under the paper protocol and once with every video on its first 8
-frames. AP drops from 96.79 to 95.26. The median score of real videos falls
+frames. AP drops from 96.79 to 95.26. (Under the paper protocol, the same
+condition gives 96.48 in Table~\ref{tab:subsets}; the two machines' copies of
+the data differ.) The median score of real videos falls
 from 22.6 to 18.9, while that of fakes stays at 2.3, so most of the separation
 remains once frame counts are equal. Here, the confound is worth about
 1.5~AP.
 
 We did not measure it for the other conditions, but we can bound its effect
-on the verdict. Removing the confound is expected to lower AP only on the
-three affected subsets, each of which weighs one tenth of the mAP. X-CLIP-rand
+on the verdict. Removing the confound is expected to lower AP mainly on the
+three subsets where most fakes use 8 frames, each of which weighs one tenth of
+the mAP; WildScrape (12\% of fakes) is affected much less. X-CLIP-rand
 would fall below 88 only if the confound were worth more than 4.8~AP on
 average on HotShot, MoonValley and Crafter, about three times what we
 measured. ResNet-18-rand would need more than 10.4~AP.
@@ -453,13 +472,13 @@ such as WildScrape.
 \begin{itemize}
   \item We test one benchmark, GenVideo-Val. The other datasets of the
         paper (EvalCrafter, VideoPhy, VidProM) are not tested.
-  \item Our runs did not save per-video scores, so we give no confidence
-        interval over videos. Uncertainty is measured over seeds and subsets
-        only.
+  \item Our runs did not save per-video scores, so our intervals cover seeds
+        and generators but not the sampling of videos.
   \item The frame-count confound is measured on one subset and one condition.
         For the others, we only bound its effect.
-  \item Every run uses the same 1000 real videos, so errors on the real side
-        are shared across subsets. Subsets are capped at 1000 fakes.
+  \item Every run uses the same 1000 real videos, so the ten subsets are not
+        independent, although the sign test and the generator bootstrap
+        treat them as such. Subsets are capped at 1000 fakes.
   \item mAP weights subsets equally. Sora has only 56 fakes and a chance AP of
         94.7, so it carries little information about any condition.
   \item Each real video is scored on one random 2-second clip. Our seeds do
@@ -480,7 +499,8 @@ such as WildScrape.
 We asked whether D3 needs a pre-trained encoder. By the rule we fixed in
 advance, it does not: with random weights, ResNet-18 and X-CLIP reach 91.1
 and 89.4 mAP on GenVideo-Val, on every seed, and a random projection with no
-network reaches 93.5. Pre-training still adds 5.6 to 8.7~mAP and helps on
+network reaches 93.5. The X-CLIP result is close to the threshold and depends
+on which generators are tested (95\% interval 85.4--93.3). Pre-training still adds 5.6 to 8.7~mAP and helps on
 every generator, so it refines D3 rather than enables it. A frame-count
 confound in the evaluation protocol could inflate these numbers, but our
 measurement and bound make it unlikely to change the verdict. Measuring the
@@ -490,9 +510,7 @@ confound for every encoder and testing other benchmarks are the next steps.
 \section*{Code Availability}
 
 Our code is available at
-\url{https://github.com/Lylichen07/D3-Ablation-Review}
-\ph{check that the repository is public, or state where the code is
-submitted}. It builds on the official D3 implementation~\cite{d3code} (MIT
+\url{https://github.com/Lylichen07/D3-Ablation-Review}. It builds on the official D3 implementation~\cite{d3code} (MIT
 License). The D3 score and the preprocessing are unchanged. Data
 preparation follows DeMamba~\cite{chen2024demamba}. Our additions are the
 randomly initialized encoders, the random-projection baseline, the seeding of

@@ -1,6 +1,6 @@
-# IEEE conference report (official IEEEtran class). Output: build-ieee/main-ieee.pdf
+# IEEE conference report (official IEEEtran class). Output: build/main.pdf
 TEX=main.tex
-BUILD=build-ieee
+BUILD=build
 
 all:
 	latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=$(BUILD) $(TEX)
