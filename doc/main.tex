@@ -51,8 +51,8 @@ encoders (X-CLIP B/16 and ResNet-18), the same two architectures with random
 weights (three seeds each), and a random projection of downsampled frames with
 no network. Following a decision rule fixed before any run, the randomly
 initialized ResNet-18 and X-CLIP reach 91.1 and 89.4 mAP, against 98.1 for
-pre-trained X-CLIP, so the hypothesis is accepted: they keep 82\% and 78\% of
-the margin that D3 reports over chance (97.7 against 60.2 mAP). The random
+pre-trained X-CLIP, so the hypothesis is accepted: they keep 83\% and 78\% of
+the margin that D3 reports over chance (97.7 against 59.4 mAP). The random
 projection, with no network, reaches 93.5 mAP. Pre-training still helps on
 every one of the ten generators (sign test, $p = 0.002$), by 5.6 mAP on average
 for ResNet-18 and 8.7 for X-CLIP. We also identify a
@@ -217,7 +217,7 @@ proposal. First, chance
 performance is not 50 mAP. With real videos as the positive class, a random
 score has an expected AP equal to the share of real videos in the run. This
 share varies with the size of each fake subset, from 50.0\% to 94.7\%
-(Table~\ref{tab:subsets}). The mean over the ten subsets, $m_0 = 60.23$,
+(Table~\ref{tab:subsets}). The mean over the ten subsets, $m_0 = 59.37$,
 depends only on the class counts. We measure each condition $c$ by the share
 of the margin over chance that it keeps:
 \begin{equation}
@@ -225,8 +225,8 @@ of the margin over chance that it keeps:
 \end{equation}
 with $m_{\mathrm{ref}} = 97.72$, the X-CLIP result reported in the paper.
 Since $m_0$ and $m_{\mathrm{ref}}$ are both known before any run, the
-thresholds translate into fixed shares: 88 mAP means keeping 74.1\% of the
-margin over chance, and 70 mAP means keeping 26.1\%. Accepting the hypothesis
+thresholds translate into fixed shares: 88 mAP means keeping 74.7\% of the
+margin over chance, and 70 mAP means keeping 27.7\%. Accepting the hypothesis
 thus requires random encoders to keep about three quarters of what the
 pre-trained encoder gains over chance, and rejecting it requires them to lose
 about three quarters. Second, we check the verdict against the seed: we call
@@ -247,11 +247,8 @@ fake subset, capped at its first 1000 videos. Videos with fewer than 8 frames
 cannot be scored. The evaluation code stops on them, so no completed run
 contains one. mAP is the unweighted mean of the ten per-subset APs, as in the
 paper, so Sora (56 fakes) counts as much as Gen2 (1000 fakes).
-\guide{Fake counts, 8-frame shares and chance come from Roland's CSVs. Check
-MoonValley and WildScrape against Najwa's CSVs: her runs cannot contain short
-videos, so these may be 582 and 924. If so, $m_0$ becomes 60.15: update it
-here, in Sec.~\ref{sec:rule} and in Tables~\ref{tab:subsets}
-and~\ref{tab:summary}; the shares 74.1\% and 26.1\% move by at most 0.1.}
+\guide{Fake counts and chance come from Najwa's CSVs (the data of the runs).
+The 8-frame shares still come from Roland's copy: replace them with Najwa's.}
 
 \begin{table}[t]
 \caption{Fake subsets of GenVideo-Val and AP (\%) per condition, seeds
@@ -268,16 +265,16 @@ Subset & Fakes & (\%) & Chance & 1 & 2 & 3 & 4 & 5 \\
 \midrule
 Crafter     & 1000 &  86.0 & 50.00 & 98.59 & 97.35 & 89.02 & 86.49 & 91.35 \\
 Gen2        & 1000 &   0.1 & 50.00 & 99.32 & 99.16 & 94.68 & 92.15 & 97.19 \\
-HotShot     &  607 & 100.0 & 62.23 & 98.45 & 98.04 & 94.96 & 94.28 & 96.47 \\
+HotShot     &  700 & 100.0 & 58.82 & 98.45 & 98.04 & 94.96 & 94.28 & 96.47 \\
 Lavie       & 1000 &   0.1 & 50.00 & 97.60 & 95.16 & 80.67 & 78.09 & 86.79 \\
 ModelScope  &  700 &   0.0 & 58.82 & 97.18 & 94.61 & 88.20 & 87.56 & 92.62 \\
-MoonValley  &  581 & 100.0 & 63.25 & 99.47 & 99.26 & 97.40 & 95.45 & 97.48 \\
-MorphStudio &  619 &   0.0 & 61.77 & 98.59 & 97.23 & 85.80 & 81.67 & 92.03 \\
+MoonValley  &  626 & 100.0 & 61.50 & 99.47 & 99.26 & 97.40 & 95.45 & 97.48 \\
+MorphStudio &  700 &   0.0 & 58.82 & 98.59 & 97.23 & 85.80 & 81.67 & 92.03 \\
 Show\_1     &  700 &   0.0 & 58.82 & 99.08 & 99.14 & 96.41 & 95.11 & 97.71 \\
 Sora        &   56 &   0.0 & 94.70 & 99.84 & 99.73 & 98.89 & 98.65 & 99.24 \\
-WildScrape  &  896 &  12.3 & 52.74 & 92.85 & 87.93 & 85.20 & 84.82 & 84.43 \\
+WildScrape  &  914 &  12.3 & 52.25 & 92.85 & 87.93 & 85.20 & 84.82 & 84.43 \\
 \midrule
-mAP         &      &       & 60.23 & 98.10 & 96.76 & 91.12 & 89.43 & 93.53 \\
+mAP         &      &       & 59.37 & 98.10 & 96.76 & 91.12 & 89.43 & 93.53 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -287,7 +284,7 @@ mAP         &      &       & 60.23 & 98.10 & 96.76 & 91.12 & 89.43 & 93.53 \\
 We keep the official preprocessing~\cite{d3code}, so that conditions~1 and~2
 reproduce the paper. Frames are extracted at 8~fps from a 3-second clip. For
 videos longer than 4~s, the clip starts at a random whole second. This applies
-to all real videos, all Sora videos and 212 WildScrape videos. Each video is
+to all real videos, all Sora videos and the WildScrape videos longer than 4~s. Each video is
 scored on its first 16 frames (2~s), or on its first 8 frames if it has fewer
 than 16. Each frame is cropped by 10\% on both sides of its longer dimension,
 resized to $224\times224$, and normalized with ImageNet statistics. The same
@@ -361,14 +358,14 @@ over chance kept (Sec.~\ref{sec:rule}). $\rho$ is relative to the reported
 \# & Condition & mAP & Seeds & Generators & $\rho$ (\%) \\
 \midrule
 1 & X-CLIP, pre-trained    & 98.10            & --           & 96.7--99.1 & 101.0 \\
-2 & ResNet-18, pre-trained & 96.76            & --           & 94.4--98.5 & 97.4 \\
-3 & ResNet-18, random      & 91.12 $\pm$ 0.78 & 90.30--91.84 & 87.4--94.6 & 82.4 \\
-4 & X-CLIP, random         & 89.43 $\pm$ 0.11 & 89.31--89.51 & 85.4--93.3 & 77.9 \\
-5 & Random projection      & 93.53 $\pm$ 0.01 & 93.52--93.54 & 90.5--96.3 & 88.8 \\
+2 & ResNet-18, pre-trained & 96.76            & --           & 94.4--98.5 & 97.5 \\
+3 & ResNet-18, random      & 91.12 $\pm$ 0.78 & 90.30--91.84 & 87.4--94.6 & 82.8 \\
+4 & X-CLIP, random         & 89.43 $\pm$ 0.11 & 89.31--89.51 & 85.4--93.3 & 78.4 \\
+5 & Random projection      & 93.53 $\pm$ 0.01 & 93.52--93.54 & 90.5--96.3 & 89.1 \\
 \midrule
-  & Accept threshold       & 88.00            & --           & --         & 74.1 \\
-  & Reject threshold       & 70.00            & --           & --         & 26.1 \\
-  & Chance                 & 60.23            & --           & --         & 0.0 \\
+  & Accept threshold       & 88.00            & --           & --         & 74.7 \\
+  & Reject threshold       & 70.00            & --           & --         & 27.7 \\
+  & Chance                 & 59.37           & --           & --         & 0.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -384,8 +381,8 @@ to the choice of generators. Over resampled subsets, the 95\% intervals are
 87.4--94.6 for ResNet-18-rand and 85.4--93.3 for X-CLIP-rand, which falls
 below 88 in 25\% of resamples (ResNet-18-rand in 5\%). X-CLIP-rand passes with
 the smallest margin, 1.4~mAP: its seeds vary by only 0.11, but its AP varies
-much more from one generator to another. The random encoders keep 82.4\% and
-77.9\% of the margin over chance, above the 74.1\% that the accept threshold
+much more from one generator to another. The random encoders keep 82.8\% and
+78.4\% of the margin over chance, above the 74.7\% that the accept threshold
 represents.
 
 Read separately, the random projection reaches 93.53 mAP with no network, so
